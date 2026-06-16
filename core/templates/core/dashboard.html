@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard — Odity Hub{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block extra_styles %}
+/* ── HERO CTA ── */
+.hero {
+    text-align: center;
+    padding: 48px 0 40px;
+}
+.hero-eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--accent-dim); border: 1px solid var(--border);
+    border-radius: 20px; padding: 5px 14px;
+    font-size: 12px; font-weight: 600; color: var(--accent);
+    letter-spacing: .4px; margin-bottom: 20px;
+}
+.hero h1 {
+    font-size: clamp(26px, 4vw, 40px);
+    font-weight: 700; letter-spacing: -.5px;
+    line-height: 1.2; margin-bottom: 10px;
+}
+.hero p {
+    color: var(--text-secondary); font-size: 15px; max-width: 480px; margin: 0 auto 40px;
+}
+
+/* ── CTA BUTTONS ── */
+.cta-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    max-width: 680px;
+    margin: 0 auto;
+}
+.cta-card {
+    position: relative; overflow: hidden;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 36px 28px;
+    text-decoration: none; color: inherit;
+    display: flex; flex-direction: column; align-items: center; gap: 16px;
+    text-align: center;
+    transition: transform .2s, box-shadow .2s, border-color .2s;
+    cursor: pointer;
+}
+.cta-card::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 50% -10%, var(--card-glow, var(--accent-glow)) 0%, transparent 65%);
+    opacity: 0; transition: opacity .3s;
+}
+.cta-card:hover::before { opacity: 1; }
+.cta-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 40px rgba(0,0,0,.35);
+    border-color: var(--card-accent, var(--accent));
+}
+
+.cta-icon-wrap {
+    width: 80px; height: 80px; border-radius: 22px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 34px;
+    background: var(--card-bg, var(--accent-dim));
+    color: var(--card-accent, var(--accent));
+    border: 1px solid var(--card-border, var(--border));
+    box-shadow: 0 0 24px var(--card-glow, var(--accent-glow));
+    transition: box-shadow .2s;
+}
+.cta-card:hover .cta-icon-wrap {
+    box-shadow: 0 0 40px var(--card-glow, var(--accent-glow));
+}
+
+.cta-card h3 { font-size: 18px; font-weight: 700; letter-spacing: -.2px; }
+.cta-card p { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+.cta-arrow {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 13px; font-weight: 600; color: var(--card-accent, var(--accent));
+}
+
+/* Couleurs individuelles */
+.cta-normaliser {
+    --card-accent: #6366F1;
+    --card-bg:    rgba(99,102,241,.1);
+    --card-glow:  rgba(99,102,241,.3);
+    --card-border: rgba(99,102,241,.25);
+}
+.cta-wiki {
+    --card-accent: #10B981;
+    --card-bg:    rgba(16,185,129,.1);
+    --card-glow:  rgba(16,185,129,.28);
+    --card-border: rgba(16,185,129,.25);
+}
+
+@media (max-width: 520px) {
+    .cta-grid { grid-template-columns: 1fr; }
+}
+
+/* ── KPI CAROUSEL ── */
+.section-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin: 52px 0 20px;
+}
+.section-title {
+    font-size: 16px; font-weight: 700;
+    display: flex; align-items: center; gap: 10px;
+}
+.section-title i { color: var(--accent); }
+.section-subtitle { font-size: 13px; color: var(--text-muted); }
+
+.kpi-scroll {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+}
+@media (max-width: 1024px) { .kpi-scroll { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 520px)  { .kpi-scroll { grid-template-columns: repeat(1, 1fr); } }
+
+.kpi-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px 20px;
+    display: flex; flex-direction: column; gap: 12px;
+    position: relative; overflow: hidden;
+    min-width: 0;
+}
+.kpi-card::after {
+    content: '';
+    position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--kpi-color, var(--accent)), transparent);
+}
+.kpi-top { display: flex; align-items: flex-start; justify-content: space-between; }
+.kpi-icon {
+    width: 38px; height: 38px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center; font-size: 16px;
+    background: var(--kpi-bg, var(--accent-dim));
+    color: var(--kpi-color, var(--accent));
+}
+.kpi-trend {
+    font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 20px;
+    display: flex; align-items: center; gap: 4px;
+}
+.kpi-trend.up   { background: rgba(16,185,129,.12); color: var(--success); }
+.kpi-trend.down { background: rgba(239,68,68,.12);  color: var(--danger); }
+.kpi-trend.na   { background: var(--bg-raised); color: var(--text-muted); }
+
+.kpi-value { font-size: 28px; font-weight: 700; letter-spacing: -1px; font-family: 'JetBrains Mono', monospace; }
+.kpi-label { font-size: 13px; color: var(--text-secondary); }
+.kpi-sub   { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+/* couleurs KPI */
+.kpi-indigo { --kpi-color: #6366F1; --kpi-bg: rgba(99,102,241,.12); }
+.kpi-green  { --kpi-color: #10B981; --kpi-bg: rgba(16,185,129,.12); }
+.kpi-amber  { --kpi-color: #F59E0B; --kpi-bg: rgba(245,158,11,.12); }
+.kpi-rose   { --kpi-color: #F43F5E; --kpi-bg: rgba(244,63,94,.12); }
+{% endblock %}
+
+{% block content %}
+<!-- HERO -->
+<div class="hero">
+    <div class="hero-eyebrow">
+        <i class="fa-solid fa-bolt"></i> Espace de travail unifié
+    </div>
+    <h1>Vos outils backoffice,<br>centralisés et accessibles.</h1>
+    <p>Sélectionnez un outil pour commencer votre tâche, ou consultez les KPIs en bas de page.</p>
+
+    <!-- CTA BUTTONS -->
+    <div class="cta-grid">
+        <a href="/normaliser/" class="cta-card cta-normaliser">
+            <div class="cta-icon-wrap">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+            </div>
+            <h3>Normalisateur</h3>
+            <p>Nettoyez et normalisez les noms clients avec suggestions d'alternatives.</p>
+            <span class="cta-arrow">Accéder <i class="fa-solid fa-arrow-right"></i></span>
+        </a>
+
+        <a href="/wiki/" class="cta-card cta-wiki">
+            <div class="cta-icon-wrap">
+                <i class="fa-solid fa-envelope"></i>
+            </div>
+            <h3>Macros</h3>
+            <p>Retrouvez, filtrez et copiez vos réponses types classées par catégorie.</p>
+            <span class="cta-arrow">Accéder <i class="fa-solid fa-arrow-right"></i></span>
+        </a>
+    </div>
+</div>
+
+<!-- KPI SECTION -->
+<div class="section-header">
+    <div>
+        <div class="section-title"><i class="fa-solid fa-chart-bar"></i> KPIs & Métriques</div>
+        <div class="section-subtitle">Données à titre indicatif — intégration à venir</div>
+    </div>
+    <span class="badge badge-accent"><i class="fa-solid fa-clock"></i> Bientôt disponible</span>
+</div>
+
+<div class="kpi-scroll">
+    <!-- KPI 1 -->
+    <div class="kpi-card kpi-indigo">
+        <div class="kpi-top">
+            <div class="kpi-icon"><i class="fa-solid fa-envelope"></i></div>
+            <div class="kpi-trend na"><i class="fa-solid fa-minus"></i> N/D</div>
+        </div>
+        <div>
+            <div class="kpi-value">—</div>
+            <div class="kpi-label">Macros utilisées</div>
+            <div class="kpi-sub">Ce mois-ci</div>
+        </div>
+    </div>
+
+    <!-- KPI 2 -->
+    <div class="kpi-card kpi-green">
+        <div class="kpi-top">
+            <div class="kpi-icon"><i class="fa-solid fa-user-check"></i></div>
+            <div class="kpi-trend na"><i class="fa-solid fa-minus"></i> N/D</div>
+        </div>
+        <div>
+            <div class="kpi-value">—</div>
+            <div class="kpi-label">Noms normalisés</div>
+            <div class="kpi-sub">Depuis le lancement</div>
+        </div>
+    </div>
+
+    <!-- KPI 3 -->
+    <div class="kpi-card kpi-amber">
+        <div class="kpi-top">
+            <div class="kpi-icon"><i class="fa-solid fa-stopwatch"></i></div>
+            <div class="kpi-trend na"><i class="fa-solid fa-minus"></i> N/D</div>
+        </div>
+        <div>
+            <div class="kpi-value">—</div>
+            <div class="kpi-label">Temps moyen traitement</div>
+            <div class="kpi-sub">Par opération</div>
+        </div>
+    </div>
+
+    <!-- KPI 4 -->
+    <div class="kpi-card kpi-rose">
+        <div class="kpi-top">
+            <div class="kpi-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            <div class="kpi-trend na"><i class="fa-solid fa-minus"></i> N/D</div>
+        </div>
+        <div>
+            <div class="kpi-value">—</div>
+            <div class="kpi-label">Anomalies détectées</div>
+            <div class="kpi-sub">Dernières 24h</div>
+        </div>
+    </div>
+</div>
+{% endblock %}

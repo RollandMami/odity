@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block title %}Normalisateur — Odity Hub{% endblock %}
+{% block nav_normaliser %}active{% endblock %}
+{% block page_title %}Normalisateur de Noms{% endblock %}
+
+{% block extra_styles %}
+.normaliser-wrap {
+    max-width: 720px; margin: 0 auto;
+}
+.page-heading {
+    margin-bottom: 28px;
+}
+.page-heading h2 {
+    font-size: 24px; font-weight: 700; letter-spacing: -.3px;
+    display: flex; align-items: center; gap: 12px;
+}
+.page-heading h2 i { color: var(--accent); }
+.page-heading p { color: var(--text-secondary); font-size: 14px; margin-top: 6px; }
+
+.input-card { margin-bottom: 24px; }
+.input-row {
+    display: flex; gap: 10px; align-items: stretch;
+}
+.field-input {
+    flex: 1; background: var(--bg-raised);
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    color: var(--text-primary); font-size: 15px; font-family: 'Inter', sans-serif;
+    padding: 12px 16px; outline: none;
+    transition: border-color .15s, box-shadow .15s;
+}
+.field-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+}
+.field-input::placeholder { color: var(--text-muted); }
+
+.btn-lg {
+    padding: 12px 24px; font-size: 14px;
+    border-radius: var(--radius-sm);
+}
+
+.result-section { margin-top: 8px; }
+.result-label {
+    font-size: 11px; font-weight: 600; letter-spacing: .8px;
+    text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;
+}
+.result-main {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--bg-raised); border: 1px solid var(--accent);
+    border-radius: var(--radius-sm); padding: 14px 18px;
+    margin-bottom: 16px;
+}
+.result-main .value {
+    flex: 1; font-family: 'JetBrains Mono', monospace;
+    font-size: 18px; font-weight: 700; color: var(--text-primary);
+}
+.alt-list { display: flex; flex-direction: column; gap: 8px; }
+.alt-item {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--bg-raised); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 10px 14px;
+    transition: border-color .15s;
+}
+.alt-item:hover { border-color: var(--accent); }
+.alt-item .value {
+    flex: 1; font-family: 'JetBrains Mono', monospace; font-size: 14px;
+}
+
+/* ── CLICK-TO-COPY ── */
+.result-main,
+.alt-item {
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+}
+.result-main:active,
+.alt-item:active {
+    transform: scale(0.995);
+}
+.copy-hint {
+    font-size: 11px; color: var(--text-muted);
+    display: flex; align-items: center; gap: 4px;
+    flex-shrink: 0; transition: color .15s;
+}
+.result-main:hover .copy-hint,
+.alt-item:hover .copy-hint { color: var(--accent); }
+
+/* Flash d'animation au clic */
+@keyframes copyFlash {
+    0%   { box-shadow: 0 0 0 0 var(--accent-glow); }
+    50%  { box-shadow: 0 0 0 6px var(--accent-glow); }
+    100% { box-shadow: 0 0 0 0 transparent; }
+}
+.copy-flash { animation: copyFlash .35s ease-out; }
+
+/* ── RESET BUTTON ── */
+.btn-reset {
+    background: transparent; border: 1px solid var(--border);
+    color: var(--text-muted); border-radius: var(--radius-sm);
+    padding: 12px 16px; font-size: 14px; cursor: pointer;
+    display: flex; align-items: center; gap: 7px;
+    font-family: 'Inter', sans-serif; font-weight: 500;
+    transition: all .15s; flex-shrink: 0;
+}
+.btn-reset:hover { border-color: var(--danger); color: var(--danger); }
+
+@media (max-width: 520px) {
+    .input-row { flex-direction: column; }
+    .btn-reset { justify-content: center; }
+}
+{% endblock %}
+
+{% block content %}
+<div class="normaliser-wrap">
+    <div class="page-heading">
+        <h2><i class="fa-solid fa-wand-magic-sparkles"></i> Normalisateur de Noms</h2>
+        <p>Saisissez un nom client brut pour obtenir une version normalisée et des alternatives suggérées.</p>
+    </div>
+
+    <div class="card input-card">
+        <form method="POST" id="normaliserForm">
+            {% csrf_token %}
+            <div class="input-row">
+                <input type="text" name="nom_a_normaliser" id="nomInput" class="field-input"
+                       placeholder="ex: jean-michéle, DUPONT marie…"
+                       value="{{ nom_input }}" required autocomplete="off">
+                <button class="btn btn-accent btn-lg" type="submit">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Normaliser
+                </button>
+                {% if nom_input %}
+                <button type="button" class="btn-reset" onclick="resetForm()" title="Tout effacer">
+                    <i class="fa-solid fa-rotate-left"></i> Reset
+                </button>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    {% if nom_clean %}
+    <div class="result-section">
+        <div class="result-label">Résultat principal</div>
+        <div class="result-main" onclick="copyRow(this, 'nom-principal')" title="Cliquer pour copier">
+            <span class="value" id="nom-principal">{{ nom_clean }}</span>
+            <span class="copy-hint"><i class="fa-regular fa-copy"></i> Clic pour copier</span>
+        </div>
+
+        {% if alternatives %}
+        <div class="result-label">Alternatives suggérées</div>
+        <div class="alt-list">
+            {% for alt in alternatives %}
+            <div class="alt-item" onclick="copyRow(this, 'alt-{{ forloop.counter }}')" title="Cliquer pour copier">
+                <span class="value" id="alt-{{ forloop.counter }}">{{ alt }}</span>
+                <span class="copy-hint"><i class="fa-regular fa-copy"></i></span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<!-- Toast -->
+<div id="toast" style="
+    position:fixed; bottom:28px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:var(--bg-surface); border:1px solid var(--accent); color:var(--text-primary);
+    border-radius:10px; padding:10px 20px; font-size:13px; font-weight:500;
+    box-shadow:0 8px 32px rgba(0,0,0,.4); display:flex; align-items:center; gap:8px;
+    opacity:0; transition:all .25s; z-index:999; pointer-events:none;">
+    <i class="fa-solid fa-check" style="color:var(--success)"></i> <span id="toastMsg">Copié !</span>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    document.getElementById('toastMsg').textContent = msg;
+    t.style.opacity = '1'; t.style.transform = 'translateX(-50%) translateY(0)';
+    setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateX(-50%) translateY(20px)'; }, 2000);
+}
+
+function copyRow(rowEl, valueId) {
+    const text = document.getElementById(valueId).textContent.trim();
+    navigator.clipboard.writeText(text).then(() => {
+        rowEl.classList.add('copy-flash');
+        rowEl.addEventListener('animationend', () => rowEl.classList.remove('copy-flash'), { once: true });
+        showToast('« ' + text + ' » copié !');
+    });
+}
+
+function resetForm() {
+    window.location.href = window.location.pathname;
+}
+</script>
+{% endblock %}

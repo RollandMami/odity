@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Odity Backoffice Hub{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --bg-base:     #0F1117;
+            --bg-surface:  #1C1F2E;
+            --bg-raised:   #252A3D;
+            --accent:      #6366F1;
+            --accent-glow: rgba(99,102,241,0.25);
+            --accent-dim:  rgba(99,102,241,0.12);
+            --success:     #10B981;
+            --warn:        #F59E0B;
+            --danger:      #EF4444;
+            --text-primary:   #F1F5F9;
+            --text-secondary: #94A3B8;
+            --text-muted:     #475569;
+            --border:      rgba(99,102,241,0.18);
+            --sidebar-w:   260px;
+            --header-h:    64px;
+            --radius:      12px;
+            --radius-sm:   8px;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-base);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ── SIDEBAR ── */
+        .sidebar {
+            position: fixed; top: 0; left: 0;
+            width: var(--sidebar-w);
+            height: 100vh;
+            background: var(--bg-surface);
+            border-right: 1px solid var(--border);
+            display: flex; flex-direction: column;
+            z-index: 200;
+            transition: transform .3s cubic-bezier(.4,0,.2,1);
+        }
+        .sidebar-logo {
+            height: var(--header-h);
+            display: flex; align-items: center; gap: 12px;
+            padding: 0 20px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .logo-mark {
+            width: 34px; height: 34px;
+            background: linear-gradient(135deg, var(--accent), #818CF8);
+            border-radius: 9px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 16px; color: #fff;
+            box-shadow: 0 0 14px var(--accent-glow);
+        }
+        .logo-text { font-weight: 700; font-size: 17px; letter-spacing: -.3px; }
+        .logo-text span { color: var(--accent); }
+
+        .sidebar-nav { flex: 1; overflow-y: auto; padding: 16px 12px; }
+        .nav-label {
+            font-size: 10px; font-weight: 600; letter-spacing: 1.2px;
+            color: var(--text-muted); text-transform: uppercase;
+            padding: 0 8px; margin: 12px 0 6px;
+        }
+        .nav-link {
+            display: flex; align-items: center; gap: 12px;
+            padding: 10px 12px;
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px; font-weight: 500;
+            transition: all .18s;
+            cursor: pointer;
+        }
+        .nav-link i { width: 18px; text-align: center; font-size: 15px; }
+        .nav-link:hover { background: var(--accent-dim); color: var(--text-primary); }
+        .nav-link.active { background: var(--accent-dim); color: var(--accent); border: 1px solid var(--border); }
+        .nav-link.active i { color: var(--accent); }
+
+        .sidebar-footer {
+            padding: 16px; border-top: 1px solid var(--border);
+        }
+        .user-chip {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 12px; border-radius: var(--radius-sm);
+            background: var(--bg-raised);
+        }
+        .avatar {
+            width: 32px; height: 32px; border-radius: 50%;
+            background: linear-gradient(135deg, #6366F1, #A78BFA);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 13px; font-weight: 700; color: #fff;
+            flex-shrink: 0;
+        }
+        .user-info { min-width: 0; }
+        .user-name { font-size: 13px; font-weight: 600; truncate: ellipsis; }
+        .user-role { font-size: 11px; color: var(--text-muted); }
+
+        /* ── OVERLAY (mobile) ── */
+        .sidebar-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,.55); z-index: 199;
+        }
+        .sidebar-overlay.open { display: block; }
+
+        /* ── TOPBAR ── */
+        .topbar {
+            position: fixed; top: 0;
+            left: var(--sidebar-w); right: 0;
+            height: var(--header-h);
+            background: var(--bg-surface);
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center;
+            padding: 0 24px; gap: 16px;
+            z-index: 100;
+        }
+        .burger-btn {
+            display: none; border: none; background: none;
+            color: var(--text-secondary); font-size: 20px; cursor: pointer;
+            padding: 6px; border-radius: 6px;
+            transition: color .15s;
+        }
+        .burger-btn:hover { color: var(--text-primary); }
+
+        .topbar-title { font-weight: 600; font-size: 15px; flex: 1; }
+        .topbar-actions { display: flex; align-items: center; gap: 10px; }
+        .topbar-btn {
+            width: 36px; height: 36px; border-radius: var(--radius-sm);
+            border: 1px solid var(--border); background: var(--bg-raised);
+            color: var(--text-secondary); font-size: 15px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: all .15s;
+        }
+        .topbar-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+        /* ── MAIN ── */
+        .main-content {
+            margin-left: var(--sidebar-w);
+            margin-top: var(--header-h);
+            min-height: calc(100vh - var(--header-h));
+            padding: 32px;
+        }
+
+        /* ── MOBILE ── */
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); }
+            .topbar { left: 0; }
+            .burger-btn { display: flex; }
+            .main-content { margin-left: 0; padding: 20px 16px; }
+        }
+
+        /* ── UTILS ── */
+        .card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+        }
+        .badge {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+        }
+        .badge-accent { background: var(--accent-dim); color: var(--accent); }
+        .badge-success { background: rgba(16,185,129,.12); color: var(--success); }
+
+        {% block extra_styles %}{% endblock %}
+    </style>
+</head>
+<body>
+
+<!-- SIDEBAR OVERLAY (mobile) -->
+<div class="sidebar-overlay" id="overlay" onclick="closeSidebar()"></div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+        <div class="logo-mark">O</div>
+        <div class="logo-text"><span>Odity</span> Hub</div>
+    </div>
+
+    <nav class="sidebar-nav">
+        <div class="nav-label">Navigation</div>
+        <a href="/" class="nav-link {% block nav_dashboard %}{% endblock %}">
+            <i class="fa-solid fa-gauge-high"></i> Dashboard
+        </a>
+        <a href="/normaliser/" class="nav-link {% block nav_normaliser %}{% endblock %}">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> Normalisateur
+        </a>
+        <a href="/wiki/" class="nav-link {% block nav_wiki %}{% endblock %}">
+            <i class="fa-solid fa-book-open"></i> Wiki Macros
+        </a>
+
+        <div class="nav-label" style="margin-top:20px;">Reporting</div>
+        <a href="#" class="nav-link">
+            <i class="fa-solid fa-chart-line"></i> KPIs
+        </a>
+        <a href="#" class="nav-link">
+            <i class="fa-solid fa-file-export"></i> Exports
+        </a>
+
+        <div class="nav-label" style="margin-top:20px;">Admin</div>
+        <a href="/admin/" class="nav-link">
+            <i class="fa-solid fa-shield-halved"></i> Django Admin
+        </a>
+        <a href="#" class="nav-link">
+            <i class="fa-solid fa-gear"></i> Paramètres
+        </a>
+    </nav>
+
+    <div class="sidebar-footer">
+        <div class="user-chip">
+            <div class="avatar">A</div>
+            <div class="user-info">
+                <div class="user-name">Agent</div>
+                <div class="user-role">Backoffice</div>
+            </div>
+        </div>
+    </div>
+</aside>
+
+<!-- TOPBAR -->
+<header class="topbar">
+    <button class="burger-btn" id="burgerBtn" onclick="toggleSidebar()">
+        <i class="fa-solid fa-bars"></i>
+    </button>
+    <div class="topbar-title">{% block page_title %}Odity Backoffice Hub{% endblock %}</div>
+    <div class="topbar-actions">
+        <button class="topbar-btn" title="Notifications">
+            <i class="fa-solid fa-bell"></i>
+        </button>
+        <button class="topbar-btn" title="Aide">
+            <i class="fa-solid fa-circle-question"></i>
+        </button>
+    </div>
+</header>
+
+<!-- MAIN -->
+<main class="main-content">
+    {% block content %}{% endblock %}
+</main>
+
+<script>
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('open');
+        document.getElementById('overlay').classList.toggle('open');
+    }
+    function closeSidebar() {
+        document.getElementById('sidebar').classList.remove('open');
+        document.getElementById('overlay').classList.remove('open');
+    }
+</script>
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

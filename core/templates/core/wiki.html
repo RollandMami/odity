@@ -1,0 +1,804 @@
+{% extends "base.html" %}
+
+{% block title %}Wiki Macros — Odity Hub{% endblock %}
+{% block nav_wiki %}active{% endblock %}
+{% block page_title %}Wiki Macros{% endblock %}
+
+{% block extra_styles %}
+/* ── RESET PADDING POUR LE WIKI ── */
+/* Le wiki prend tout l'espace dispo */
+.main-content { padding: 0; display: flex; flex-direction: column; height: calc(100vh - var(--header-h)); overflow: hidden; }
+
+/* ── NOTEBOOK BAR ── */
+.notebook-bar {
+    height: 44px; flex-shrink: 0;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: flex-end; gap: 0;
+    padding: 0 16px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+.notebook-bar::-webkit-scrollbar { display: none; }
+
+.nb-tab {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 16px 9px;
+    font-size: 13px; font-weight: 500;
+    color: var(--text-secondary);
+    border-bottom: 2px solid transparent;
+    cursor: pointer; white-space: nowrap;
+    transition: all .15s;
+    user-select: none;
+}
+.nb-tab:hover { color: var(--text-primary); }
+.nb-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.nb-tab .close-tab {
+    width: 16px; height: 16px; border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; opacity: 0;
+    background: transparent; border: none; color: inherit; cursor: pointer;
+    transition: opacity .15s, background .15s;
+}
+.nb-tab:hover .close-tab { opacity: .6; }
+.nb-tab .close-tab:hover { opacity: 1; background: var(--bg-raised); }
+
+.nb-add {
+    padding: 8px 10px 9px;
+    color: var(--text-muted); font-size: 14px;
+    cursor: pointer; border: none; background: none;
+    transition: color .15s;
+}
+.nb-add:hover { color: var(--accent); }
+
+/* ── THREE-PANEL LAYOUT ── */
+.wiki-body {
+    flex: 1; display: flex; overflow: hidden;
+}
+
+/* Panel 1 — Arborescence */
+.panel-tree {
+    width: 260px; flex-shrink: 0;
+    background: var(--bg-surface);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    transition: width .25s;
+}
+.panel-tree.collapsed { width: 0; overflow: hidden; }
+
+.panel-header {
+    height: 44px; flex-shrink: 0;
+    display: flex; align-items: center; gap: 8px;
+    padding: 0 14px;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px; font-weight: 600; letter-spacing: .4px;
+    text-transform: uppercase; color: var(--text-muted);
+}
+.panel-header-actions { margin-left: auto; display: flex; gap: 4px; }
+.icon-btn {
+    width: 26px; height: 26px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center; font-size: 12px;
+    border: none; background: transparent; color: var(--text-muted);
+    cursor: pointer; transition: all .15s;
+}
+.icon-btn:hover { background: var(--bg-raised); color: var(--accent); }
+
+/* Search */
+.tree-search {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+}
+.search-input-wrap {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--bg-raised); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 0 10px;
+}
+.search-input-wrap i { color: var(--text-muted); font-size: 13px; flex-shrink: 0; }
+.search-input {
+    flex: 1; background: none; border: none; outline: none;
+    color: var(--text-primary); font-size: 13px; font-family: 'Inter', sans-serif;
+    padding: 7px 0;
+}
+.search-input::placeholder { color: var(--text-muted); }
+
+/* Filters */
+.tree-filters {
+    display: flex; gap: 6px; padding: 8px 12px;
+    border-bottom: 1px solid var(--border); flex-shrink: 0;
+    flex-wrap: wrap;
+}
+.filter-pill {
+    padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+    border: 1px solid var(--border); background: var(--bg-raised);
+    color: var(--text-secondary); cursor: pointer; transition: all .15s;
+}
+.filter-pill:hover, .filter-pill.active {
+    background: var(--accent-dim); color: var(--accent); border-color: var(--border);
+}
+
+/* Tree list */
+.tree-list { flex: 1; overflow-y: auto; padding: 8px 0; }
+.tree-category { margin-bottom: 4px; }
+.tree-cat-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 14px;
+    font-size: 12px; font-weight: 600;
+    color: var(--text-secondary); letter-spacing: .3px;
+    cursor: pointer; user-select: none;
+    transition: color .15s;
+}
+.tree-cat-header:hover { color: var(--text-primary); }
+.tree-cat-header i.chevron { transition: transform .2s; font-size: 11px; }
+.tree-cat-header.open i.chevron { transform: rotate(90deg); }
+.tree-cat-header .cat-count {
+    margin-left: auto; background: var(--bg-raised); border-radius: 10px;
+    padding: 1px 7px; font-size: 11px; color: var(--text-muted);
+}
+
+.tree-macro-list { display: none; }
+.tree-macro-list.open { display: block; }
+.tree-macro-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 14px 7px 32px;
+    font-size: 13px; color: var(--text-secondary);
+    cursor: pointer; border-left: 2px solid transparent;
+    transition: all .15s;
+}
+.tree-macro-item:hover { background: var(--bg-raised); color: var(--text-primary); }
+.tree-macro-item.active {
+    background: var(--accent-dim); color: var(--accent);
+    border-left-color: var(--accent);
+}
+.tree-macro-item i { font-size: 12px; flex-shrink: 0; }
+
+/* Panel 2 — Viewer */
+.panel-viewer {
+    flex: 1; display: flex; flex-direction: column; overflow: hidden;
+    min-width: 0;
+}
+.viewer-toolbar {
+    height: 44px; flex-shrink: 0;
+    background: var(--bg-surface); border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px; padding: 0 16px;
+}
+.viewer-toolbar .macro-title { font-size: 14px; font-weight: 600; flex: 1; }
+.btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 6px 14px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600;
+    border: 1px solid transparent; cursor: pointer; transition: all .15s; font-family: 'Inter', sans-serif;
+}
+.btn-accent { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn-accent:hover { background: #4F52CC; }
+.btn-ghost { background: var(--bg-raised); color: var(--text-secondary); border-color: var(--border); }
+.btn-ghost:hover { color: var(--text-primary); border-color: var(--accent); }
+
+.viewer-content {
+    flex: 1; overflow-y: auto; padding: 24px;
+}
+.macro-body {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13.5px; line-height: 1.75;
+    color: var(--text-primary);
+    background: var(--bg-raised); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 24px;
+    white-space: pre-wrap; word-break: break-word;
+    min-height: 200px;
+}
+
+/* Empty state */
+.empty-state {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 12px; height: 100%;
+    color: var(--text-muted); text-align: center; padding: 40px;
+}
+.empty-icon {
+    width: 72px; height: 72px; border-radius: 20px;
+    background: var(--bg-raised); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; color: var(--text-muted); margin-bottom: 8px;
+}
+.empty-state h3 { font-size: 16px; font-weight: 600; color: var(--text-secondary); }
+.empty-state p  { font-size: 13px; max-width: 300px; line-height: 1.6; }
+
+/* Macro list view (accueil wiki) */
+.macro-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+}
+.macro-list-card {
+    background: var(--bg-raised); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px;
+    cursor: pointer; transition: all .18s;
+}
+.macro-list-card:hover {
+    border-color: var(--accent); box-shadow: 0 4px 20px rgba(99,102,241,.15);
+    transform: translateY(-2px);
+}
+.macro-list-card .mlc-title {
+    font-size: 14px; font-weight: 600; margin-bottom: 4px;
+    display: flex; align-items: center; gap: 8px;
+}
+.macro-list-card .mlc-cat { font-size: 11px; color: var(--text-muted); margin-bottom: 8px; }
+.macro-list-card .mlc-preview {
+    font-size: 12px; color: var(--text-secondary);
+    font-family: 'JetBrains Mono', monospace;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* Panel 3 — Properties */
+.panel-props {
+    width: 240px; flex-shrink: 0;
+    background: var(--bg-surface);
+    border-left: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    transition: width .25s;
+}
+.panel-props.collapsed { width: 0; overflow: hidden; }
+
+.prop-body { flex: 1; overflow-y: auto; padding: 14px; }
+.prop-group { margin-bottom: 18px; }
+.prop-group-title {
+    font-size: 10px; font-weight: 700; letter-spacing: 1px;
+    text-transform: uppercase; color: var(--text-muted);
+    margin-bottom: 8px;
+}
+.prop-row {
+    display: flex; flex-direction: column; gap: 2px;
+    margin-bottom: 10px;
+}
+.prop-key { font-size: 11px; color: var(--text-muted); }
+.prop-val { font-size: 13px; color: var(--text-primary); font-weight: 500; }
+.prop-val.badge-like {
+    display: inline-flex; padding: 2px 8px; border-radius: 12px; font-size: 11px;
+    background: var(--accent-dim); color: var(--accent);
+}
+
+.copy-full-btn {
+    margin: 0 14px 14px;
+    width: calc(100% - 28px);
+    padding: 9px; border-radius: var(--radius-sm);
+    background: var(--accent); color: #fff;
+    border: none; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: background .15s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.copy-full-btn:hover { background: #4F52CC; }
+
+/* Resizer */
+.resizer {
+    width: 4px; flex-shrink: 0;
+    background: transparent; cursor: col-resize;
+    transition: background .15s;
+}
+.resizer:hover { background: var(--accent); }
+
+/* Sort bar */
+.sort-bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 16px; border-bottom: 1px solid var(--border);
+    flex-shrink: 0; flex-wrap: wrap;
+}
+.sort-bar label { font-size: 12px; color: var(--text-muted); }
+.sort-select {
+    background: var(--bg-raised); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); color: var(--text-primary);
+    font-size: 12px; padding: 4px 8px; cursor: pointer; outline: none;
+}
+.results-count { margin-left: auto; font-size: 12px; color: var(--text-muted); }
+
+.empty-tab-search {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 12px; padding: 40px 24px; text-align: center;
+}
+.empty-tab-search .ets-icon {
+    width: 64px; height: 64px; border-radius: 18px;
+    background: var(--accent-dim); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; color: var(--accent); margin-bottom: 4px;
+}
+.empty-tab-search h3 { font-size: 17px; font-weight: 700; }
+.empty-tab-search p  { font-size: 13px; color: var(--text-secondary); }
+.empty-tab-search .search-input-wrap { width: 100%; }
+#emptyTabResults { width: 100%; text-align: left; }
+
+/* Mobile panels collapse */
+@media (max-width: 900px) {
+    .panel-props { display: none; }
+    .panel-tree { width: 220px; }
+}
+@media (max-width: 620px) {
+    .panel-tree { position: fixed; top: var(--header-h); left: 0; bottom: 0; z-index: 150; transform: translateX(-100%); transition: transform .25s; width: 280px; }
+    .panel-tree.mobile-open { transform: translateX(0); }
+}
+
+/* Toast */
+.toast {
+    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--bg-surface); border: 1px solid var(--accent);
+    color: var(--text-primary); border-radius: 10px;
+    padding: 10px 20px; font-size: 13px; font-weight: 500;
+    box-shadow: 0 8px 32px rgba(0,0,0,.4);
+    display: flex; align-items: center; gap: 8px;
+    opacity: 0; transition: all .25s; z-index: 999; pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+{% endblock %}
+
+{% block content %}
+
+<!-- NOTEBOOK BAR -->
+<div class="notebook-bar" id="notebookBar">
+    <div class="nb-tab active" data-tab="home">
+        <i class="fa-solid fa-house"></i> Accueil
+    </div>
+    <!-- Les onglets des macros ouvertes seront ajoutés ici par JS -->
+    <button class="nb-add" title="Nouvelle tab" onclick="openBlankTab()">
+        <i class="fa-solid fa-plus"></i>
+    </button>
+</div>
+
+<!-- THREE-PANEL BODY -->
+<div class="wiki-body">
+
+    <!-- PANEL 1 : ARBORESCENCE -->
+    <div class="panel-tree" id="panelTree">
+        <div class="panel-header">
+            <i class="fa-solid fa-sitemap"></i> Arborescence
+            <div class="panel-header-actions">
+                <button class="icon-btn" title="Réduire" onclick="togglePanel('panelTree')">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="tree-search">
+            <div class="search-input-wrap">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" class="search-input" id="treeSearch" placeholder="Rechercher une macro…" oninput="filterTree(this.value)">
+            </div>
+        </div>
+
+        <div class="tree-filters">
+            <span class="filter-pill active" onclick="setFilter('all', this)">Toutes</span>
+            {% for cat in categories %}
+            <span class="filter-pill" onclick="setFilter('{{ cat.id }}', this)">{{ cat.nom }}</span>
+            {% endfor %}
+        </div>
+
+        <div class="tree-list" id="treeList">
+            {% for cat in categories %}
+            <div class="tree-category" data-cat-id="{{ cat.id }}">
+                <div class="tree-cat-header open" onclick="toggleCat(this)">
+                    <i class="fa-solid fa-chevron-right chevron"></i>
+                    <i class="fa-solid fa-folder" style="color:var(--warn)"></i>
+                    {{ cat.nom }}
+                    <span class="cat-count">{{ cat.macros.all|length }}</span>
+                </div>
+                <div class="tree-macro-list open">
+                    {% for macro in cat.macros.all %}
+                    <div class="tree-macro-item"
+                         data-macro-id="{{ macro.id }}"
+                         data-cat-id="{{ cat.id }}"
+                         onclick="openMacro({{ macro.id }}, '{{ macro.titre|escapejs }}', `{{ macro.contenu|escapejs }}`, '{{ cat.nom|escapejs }}', '{{ macro.date_creation|date:'d/m/Y'|escapejs }}')">
+                        <i class="fa-regular fa-file-lines"></i>
+                        {{ macro.titre }}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% empty %}
+            <div style="padding:20px 14px; color:var(--text-muted); font-size:13px;">
+                Aucune macro. Ajoutez-en via l'admin Django.
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="resizer" id="resizer"></div>
+
+    <!-- PANEL 2 : VIEWER -->
+    <div class="panel-viewer">
+
+        <!-- SORT BAR (visible accueil) -->
+        <div class="sort-bar" id="sortBar">
+            <label>Trier par</label>
+            <select class="sort-select" id="sortSelect" onchange="sortMacros(this.value)">
+                <option value="title">Titre A→Z</option>
+                <option value="title_desc">Titre Z→A</option>
+                <option value="cat">Catégorie</option>
+                <option value="date">Date (récent)</option>
+            </select>
+            <span class="results-count" id="resultsCount"></span>
+        </div>
+
+        <!-- VIEWER TOOLBAR (visible sur macro ouverte) -->
+        <div class="viewer-toolbar" id="viewerToolbar" style="display:none;">
+            <div class="macro-title" id="viewerTitle">—</div>
+            <button class="btn btn-ghost" onclick="openInNewTab()"><i class="fa-solid fa-arrow-up-right-from-square"></i> Détacher</button>
+            <button class="btn btn-accent" onclick="copyActive()"><i class="fa-solid fa-copy"></i> Copier</button>
+        </div>
+
+        <div class="viewer-content" id="viewerContent">
+            <!-- Accueil : grille de macros -->
+            <div id="homeView">
+                <div class="macro-grid" id="macroGrid">
+                    {% for cat in categories %}
+                        {% for macro in cat.macros.all %}
+                        <div class="macro-list-card"
+                             data-title="{{ macro.titre }}"
+                             data-cat="{{ cat.nom }}"
+                             data-date="{{ macro.date_creation|date:'Y-m-d' }}"
+                             onclick="openMacro({{ macro.id }}, '{{ macro.titre|escapejs }}', `{{ macro.contenu|escapejs }}`, '{{ cat.nom|escapejs }}', '{{ macro.date_creation|date:'d/m/Y'|escapejs }}')">
+                            <div class="mlc-title">
+                                <i class="fa-regular fa-file-lines" style="color:var(--accent)"></i>
+                                {{ macro.titre }}
+                            </div>
+                            <div class="mlc-cat"><i class="fa-solid fa-folder" style="color:var(--warn)"></i> {{ cat.nom }}</div>
+                            <div class="mlc-preview">{{ macro.contenu|truncatechars:80 }}</div>
+                        </div>
+                        {% endfor %}
+                    {% empty %}
+                        <div class="empty-state" style="grid-column:1/-1">
+                            <div class="empty-icon"><i class="fa-solid fa-book-open"></i></div>
+                            <h3>Aucune macro disponible</h3>
+                            <p>Commencez par ajouter des catégories et des macros depuis l'interface Django Admin.</p>
+                            <a href="/admin/" class="btn btn-accent"><i class="fa-solid fa-shield-halved"></i> Aller à l'admin</a>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Vue macro ouverte -->
+            <div id="macroView" style="display:none;">
+                <pre class="macro-body" id="macroContent"></pre>
+            </div>
+
+            <!-- Vue onglet vide (nouvelle tab) -->
+            <div id="emptyTabView" style="display:none;">
+                <div class="empty-tab-search">
+                    <div class="ets-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
+                    <h3>Nouvel onglet</h3>
+                    <p>Recherchez une macro pour l'ouvrir dans cet onglet.</p>
+                    <div class="search-input-wrap" style="max-width:400px; margin:0 auto;">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" class="search-input" id="emptyTabSearch"
+                               placeholder="Rechercher une macro…"
+                               oninput="filterEmptyTab(this.value)">
+                    </div>
+                    <div id="emptyTabResults" class="macro-grid" style="margin-top:20px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="resizer"></div>
+
+    <!-- PANEL 3 : PROPERTIES -->
+    <div class="panel-props" id="panelProps">
+        <div class="panel-header">
+            <i class="fa-solid fa-circle-info"></i> Propriétés
+            <div class="panel-header-actions">
+                <button class="icon-btn" onclick="togglePanel('panelProps')">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+        <div class="prop-body" id="propBody">
+            <div style="color:var(--text-muted); font-size:13px; margin-top:8px;">
+                Sélectionnez une macro pour voir ses détails.
+            </div>
+        </div>
+        <button class="copy-full-btn" id="copyFullBtn" style="display:none;" onclick="copyActive()">
+            <i class="fa-solid fa-copy"></i> Copier la macro
+        </button>
+    </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"><i class="fa-solid fa-check"></i> <span id="toastMsg">Copié !</span></div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// ── State ──
+let activeMacroId = null;
+let activeMacroContent = '';
+let openTabs = [{ id: 'home', title: 'Accueil', macroId: null, type: 'home' }];
+let currentTabId = 'home';
+let currentFilter = 'all';
+let emptyTabCounter = 0;
+
+// Snapshot de toutes les macros pour la recherche dans onglet vide
+const allMacros = [];
+document.querySelectorAll('.macro-list-card').forEach(card => {
+    allMacros.push({
+        title:   card.dataset.title,
+        cat:     card.dataset.cat,
+        date:    card.dataset.date,
+        onclick: card.getAttribute('onclick'),
+        preview: card.querySelector('.mlc-preview') ? card.querySelector('.mlc-preview').textContent : ''
+    });
+});
+
+// ── INIT TABS via delegation ──
+document.addEventListener('DOMContentLoaded', () => {
+    // Délégation sur la barre de notebook
+    document.getElementById('notebookBar').addEventListener('click', e => {
+        const tab = e.target.closest('.nb-tab');
+        if (!tab) return;
+        // Ignore si c'est le bouton close
+        if (e.target.closest('.close-tab')) return;
+        switchTab(tab.dataset.tab, tab);
+    });
+
+    updateCount();
+});
+
+// ── TABS ──
+function switchTab(tabId, el) {
+    currentTabId = tabId;
+    document.querySelectorAll('.nb-tab').forEach(t => t.classList.remove('active'));
+    if (el) el.classList.add('active');
+
+    const tab = openTabs.find(t => t.id === tabId);
+    if (!tab) return;
+
+    if (tab.type === 'home') {
+        showHome();
+    } else if (tab.type === 'empty') {
+        showEmptyTab(tabId);
+    } else if (tab.type === 'macro') {
+        renderMacroView(tab.macroId, tab.title, tab.content, tab.cat, tab.date);
+    }
+}
+
+function openMacro(id, title, content, cat, date) {
+    // Activer dans l'arbre
+    document.querySelectorAll('.tree-macro-item').forEach(i => i.classList.remove('active'));
+    const treeItem = document.querySelector(`.tree-macro-item[data-macro-id="${id}"]`);
+    if (treeItem) treeItem.classList.add('active');
+
+    // Si l'onglet courant est un onglet vide → le réutiliser
+    const curTab = openTabs.find(t => t.id === currentTabId);
+    if (curTab && curTab.type === 'empty') {
+        curTab.type = 'macro';
+        curTab.macroId = id;
+        curTab.title = title;
+        curTab.content = content;
+        curTab.cat = cat;
+        curTab.date = date;
+        const el = document.querySelector(`.nb-tab[data-tab="${currentTabId}"]`);
+        if (el) {
+            const label = title.length > 18 ? title.substring(0,18)+'…' : title;
+            el.innerHTML = `<i class="fa-regular fa-file-lines"></i> ${label} <button class="close-tab" onclick="closeTab('${currentTabId}', event)"><i class="fa-solid fa-xmark"></i></button>`;
+        }
+        renderMacroView(id, title, content, cat, date);
+        return;
+    }
+
+    // Check si déjà ouvert dans un autre onglet
+    const existing = openTabs.find(t => t.macroId === id && t.type === 'macro');
+    if (existing) { switchToTabEl(existing.id); return; }
+
+    // Créer un nouvel onglet macro
+    const tabId = 'macro-' + id;
+    openTabs.push({ id: tabId, type: 'macro', title, content, cat, date, macroId: id });
+
+    const bar = document.getElementById('notebookBar');
+    const addBtn = bar.querySelector('.nb-add');
+    const tab = document.createElement('div');
+    tab.className = 'nb-tab';
+    tab.dataset.tab = tabId;
+    const label = title.length > 18 ? title.substring(0,18)+'…' : title;
+    tab.innerHTML = `<i class="fa-regular fa-file-lines"></i> ${label} <button class="close-tab" onclick="closeTab('${tabId}', event)"><i class="fa-solid fa-xmark"></i></button>`;
+    bar.insertBefore(tab, addBtn);
+
+    switchTab(tabId, tab);
+}
+
+function openBlankTab() {
+    emptyTabCounter++;
+    const tabId = 'empty-' + emptyTabCounter;
+    openTabs.push({ id: tabId, type: 'empty', title: 'Nouvel onglet', macroId: null });
+
+    const bar = document.getElementById('notebookBar');
+    const addBtn = bar.querySelector('.nb-add');
+    const tab = document.createElement('div');
+    tab.className = 'nb-tab';
+    tab.dataset.tab = tabId;
+    tab.innerHTML = `<i class="fa-solid fa-plus"></i> Nouvel onglet <button class="close-tab" onclick="closeTab('${tabId}', event)"><i class="fa-solid fa-xmark"></i></button>`;
+    bar.insertBefore(tab, addBtn);
+
+    switchTab(tabId, tab);
+
+    // Focus automatique sur le champ de recherche
+    setTimeout(() => {
+        const inp = document.getElementById('emptyTabSearch');
+        if (inp) { inp.value = ''; inp.focus(); filterEmptyTab(''); }
+    }, 50);
+}
+
+function switchToTabEl(tabId) {
+    const el = document.querySelector(`.nb-tab[data-tab="${tabId}"]`);
+    switchTab(tabId, el);
+}
+
+function closeTab(tabId, event) {
+    event.stopPropagation();
+    openTabs = openTabs.filter(t => t.id !== tabId);
+    const el = document.querySelector(`.nb-tab[data-tab="${tabId}"]`);
+    if (el) el.remove();
+    if (currentTabId === tabId) {
+        // Activer l'onglet précédent ou home
+        const remaining = document.querySelectorAll('.nb-tab');
+        if (remaining.length > 0) {
+            const last = remaining[remaining.length - 1];
+            switchTab(last.dataset.tab, last);
+        } else {
+            const home = document.querySelector('.nb-tab[data-tab="home"]');
+            switchTab('home', home);
+        }
+    }
+}
+
+function openInNewTab() {
+    const w = window.open();
+    if (w) {
+        w.document.write('<pre style="font-family:monospace;white-space:pre-wrap;padding:24px">' + activeMacroContent.replace(/</g,'&lt;') + '</pre>');
+        w.document.close();
+    }
+}
+
+// ── VIEWS ──
+function showHome() {
+    document.getElementById('homeView').style.display = '';
+    document.getElementById('macroView').style.display = 'none';
+    document.getElementById('emptyTabView').style.display = 'none';
+    document.getElementById('sortBar').style.display = '';
+    document.getElementById('viewerToolbar').style.display = 'none';
+    document.getElementById('copyFullBtn').style.display = 'none';
+    document.getElementById('propBody').innerHTML = '<div style="color:var(--text-muted); font-size:13px; margin-top:8px;">Sélectionnez une macro pour voir ses détails.</div>';
+    activeMacroId = null; activeMacroContent = '';
+    document.querySelectorAll('.tree-macro-item').forEach(i => i.classList.remove('active'));
+}
+
+function showEmptyTab(tabId) {
+    document.getElementById('homeView').style.display = 'none';
+    document.getElementById('macroView').style.display = 'none';
+    document.getElementById('emptyTabView').style.display = '';
+    document.getElementById('sortBar').style.display = 'none';
+    document.getElementById('viewerToolbar').style.display = 'none';
+    document.getElementById('copyFullBtn').style.display = 'none';
+    document.getElementById('propBody').innerHTML = '<div style="color:var(--text-muted); font-size:13px; margin-top:8px;">Recherchez et ouvrez une macro.</div>';
+    activeMacroId = null; activeMacroContent = '';
+    document.querySelectorAll('.tree-macro-item').forEach(i => i.classList.remove('active'));
+    filterEmptyTab('');
+}
+
+function filterEmptyTab(query) {
+    const q = query.toLowerCase().trim();
+    const container = document.getElementById('emptyTabResults');
+    const filtered = q === '' ? allMacros : allMacros.filter(m =>
+        m.title.toLowerCase().includes(q) || m.cat.toLowerCase().includes(q) || m.preview.toLowerCase().includes(q)
+    );
+    if (filtered.length === 0) {
+        container.innerHTML = '<div style="color:var(--text-muted); font-size:13px; text-align:center; padding:24px;">Aucune macro trouvée.</div>';
+        return;
+    }
+    container.innerHTML = filtered.map(m => `
+        <div class="macro-list-card" onclick="${m.onclick}">
+            <div class="mlc-title"><i class="fa-regular fa-file-lines" style="color:var(--accent)"></i> ${m.title}</div>
+            <div class="mlc-cat"><i class="fa-solid fa-folder" style="color:var(--warn)"></i> ${m.cat}</div>
+            <div class="mlc-preview">${m.preview}</div>
+        </div>
+    `).join('');
+}
+
+function renderMacroView(id, title, content, cat, date) {
+    activeMacroId = id; activeMacroContent = content;
+    document.getElementById('homeView').style.display = 'none';
+    document.getElementById('macroView').style.display = '';
+    document.getElementById('emptyTabView').style.display = 'none';
+    document.getElementById('sortBar').style.display = 'none';
+    document.getElementById('viewerToolbar').style.display = '';
+    document.getElementById('viewerTitle').textContent = title;
+    document.getElementById('macroContent').textContent = content;
+    document.getElementById('copyFullBtn').style.display = '';
+
+    document.getElementById('propBody').innerHTML = `
+        <div class="prop-group">
+            <div class="prop-group-title">Identification</div>
+            <div class="prop-row"><span class="prop-key">Titre</span><span class="prop-val">${title}</span></div>
+            <div class="prop-row"><span class="prop-key">Catégorie</span><span class="prop-val badge-like">${cat}</span></div>
+            <div class="prop-row"><span class="prop-key">ID</span><span class="prop-val" style="font-family:monospace">#${id}</span></div>
+        </div>
+        <div class="prop-group">
+            <div class="prop-group-title">Métadonnées</div>
+            <div class="prop-row"><span class="prop-key">Créé le</span><span class="prop-val">${date}</span></div>
+            <div class="prop-row"><span class="prop-key">Longueur</span><span class="prop-val">${content.length} car.</span></div>
+            <div class="prop-row"><span class="prop-key">Mots</span><span class="prop-val">${content.trim().split(/\s+/).filter(Boolean).length}</span></div>
+        </div>
+    `;
+}
+
+// ── COPY ──
+function copyActive() {
+    if (!activeMacroContent) return;
+    navigator.clipboard.writeText(activeMacroContent).then(() => showToast('Macro copiée !'));
+}
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    document.getElementById('toastMsg').textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ── TREE ──
+function toggleCat(el) {
+    el.classList.toggle('open');
+    const list = el.nextElementSibling;
+    list.classList.toggle('open');
+}
+
+function filterTree(query) {
+    const q = query.toLowerCase();
+    document.querySelectorAll('.tree-macro-item').forEach(item => {
+        const match = item.textContent.toLowerCase().includes(q);
+        item.style.display = match ? '' : 'none';
+    });
+    document.querySelectorAll('.tree-category').forEach(cat => {
+        const visible = [...cat.querySelectorAll('.tree-macro-item')].some(i => i.style.display !== 'none');
+        cat.style.display = visible ? '' : 'none';
+    });
+    filterGrid(q);
+}
+
+function filterGrid(q) {
+    document.querySelectorAll('.macro-list-card').forEach(card => {
+        const match = card.dataset.title.toLowerCase().includes(q) || card.dataset.cat.toLowerCase().includes(q);
+        card.style.display = match ? '' : 'none';
+    });
+    updateCount();
+}
+
+function setFilter(catId, el) {
+    currentFilter = catId;
+    document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    document.querySelectorAll('.tree-category').forEach(cat => {
+        cat.style.display = (catId === 'all' || cat.dataset.catId === catId) ? '' : 'none';
+    });
+    document.querySelectorAll('.macro-list-card').forEach(card => {
+        card.style.display = (catId === 'all' || card.dataset.catId === catId) ? '' : 'none';
+    });
+    updateCount();
+}
+
+function sortMacros(val) {
+    const grid = document.getElementById('macroGrid');
+    const cards = [...grid.querySelectorAll('.macro-list-card')];
+    cards.sort((a, b) => {
+        if (val === 'title')      return a.dataset.title.localeCompare(b.dataset.title);
+        if (val === 'title_desc') return b.dataset.title.localeCompare(a.dataset.title);
+        if (val === 'cat')        return a.dataset.cat.localeCompare(b.dataset.cat);
+        if (val === 'date')       return b.dataset.date.localeCompare(a.dataset.date);
+        return 0;
+    });
+    cards.forEach(c => grid.appendChild(c));
+}
+
+function updateCount() {
+    const visible = document.querySelectorAll('#macroGrid .macro-list-card:not([style*="display: none"])').length;
+    const el = document.getElementById('resultsCount');
+    if (el) el.textContent = `${visible} macro${visible !== 1 ? 's' : ''}`;
+}
+
+// ── PANELS ──
+function togglePanel(id) {
+    document.getElementById(id).classList.toggle('collapsed');
+}
+</script>
+{% endblock %}
