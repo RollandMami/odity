@@ -1,2 +1,5 @@
 #environement
 .venv/
+
+#base de donnee
+db.sqlite3
